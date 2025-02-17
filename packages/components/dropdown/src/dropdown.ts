@@ -30,6 +30,15 @@ export const dropdownProps = buildProps({
    * @description how to trigger
    */
   trigger: useTooltipTriggerProps.trigger,
+  triggerKeys: {
+    type: definePropType<string[]>(Array),
+    default: () => [
+      EVENT_CODE.enter,
+      EVENT_CODE.numpadEnter,
+      EVENT_CODE.space,
+      EVENT_CODE.down,
+    ],
+  },
   effect: {
     ...useTooltipContentProps.effect,
     default: 'light',
@@ -130,6 +139,13 @@ export const dropdownProps = buildProps({
    * @description whether the dropdown popup is teleported to the body
    */
   teleported: useTooltipContentProps.teleported,
+  /**
+   * @description when dropdown inactive and `persistent` is `false` , dropdown menu will be destroyed
+   */
+  persistent: {
+    type: Boolean,
+    default: true,
+  },
 } as const)
 
 export const dropdownItemProps = buildProps({

@@ -5,17 +5,10 @@
     :teleported="teleported"
     :popper-class="[nsCascader.e('dropdown'), popperClass]"
     :popper-options="popperOptions"
-    :fallback-placements="[
-      'bottom-start',
-      'bottom',
-      'top-start',
-      'top',
-      'right',
-      'left',
-    ]"
+    :fallback-placements="fallbackPlacements"
     :stop-popper-mouse-event="false"
     :gpu-acceleration="false"
-    placement="bottom-start"
+    :placement="placement"
     :transition="`${nsCascader.namespace.value}-zoom-in-top`"
     effect="light"
     pure
@@ -49,6 +42,9 @@
           @blur="handleBlur"
           @input="handleInput"
         >
+          <template v-if="$slots.prefix" #prefix>
+            <slot name="prefix" />
+          </template>
           <template #suffix>
             <el-icon
               v-if="clearBtnVisible"
@@ -159,7 +155,11 @@
         :render-label="$slots.default"
         @expand-change="handleExpandChange"
         @close="$nextTick(() => togglePopperVisible(false))"
-      />
+      >
+        <template #empty>
+          <slot name="empty" />
+        </template>
+      </el-cascader-panel>
       <el-scrollbar
         v-if="filterable"
         v-show="filtering"
@@ -198,9 +198,15 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, useAttrs, watch } from 'vue'
-import { isPromise } from '@vue/shared'
 import { cloneDeep, debounce } from 'lodash-unified'
 import { useCssVar, useResizeObserver } from '@vueuse/core'
+import {
+  debugWarn,
+  focusNode,
+  getSibling,
+  isClient,
+  isPromise,
+} from '@element-plus/utils'
 import ElCascaderPanel from '@element-plus/components/cascader-panel'
 import ElInput from '@element-plus/components/input'
 import ElTooltip from '@element-plus/components/tooltip'
@@ -215,7 +221,6 @@ import {
   useLocale,
   useNamespace,
 } from '@element-plus/hooks'
-import { debugWarn, focusNode, getSibling, isClient } from '@element-plus/utils'
 import {
   CHANGE_EVENT,
   EVENT_CODE,
@@ -307,7 +312,7 @@ const currentPlaceholder = computed(() =>
 )
 const realSize = useFormSize()
 const tagSize = computed(() =>
-  ['small'].includes(realSize.value) ? 'small' : 'default'
+  realSize.value === 'small' ? 'small' : 'default'
 )
 const multiple = computed(() => !!props.props.multiple)
 const readonly = computed(() => !props.filterable || multiple.value)
@@ -405,7 +410,6 @@ const updatePopperPosition = () => {
     tooltipRef.value?.updatePopper()
   })
 }
-
 const hideSuggestionPanel = () => {
   filtering.value = false
 }
@@ -522,9 +526,10 @@ const updateStyle = () => {
 
   if (tagWrapperEl) {
     const { offsetHeight } = tagWrapperEl
+    // 2 is el-input__wrapper padding
     const height =
       presentTags.value.length > 0
-        ? `${Math.max(offsetHeight + 6, inputInitialHeight)}px`
+        ? `${Math.max(offsetHeight, inputInitialHeight) - 2}px`
         : `${inputInitialHeight}px`
     inputInner.style.height = height
     updatePopperPosition()
@@ -545,6 +550,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   switch (e.code) {
     case EVENT_CODE.enter:
+    case EVENT_CODE.numpadEnter:
       togglePopperVisible()
       break
     case EVENT_CODE.down:
@@ -609,6 +615,7 @@ const handleSuggestionKeyDown = (e: KeyboardEvent) => {
       break
     }
     case EVENT_CODE.enter:
+    case EVENT_CODE.numpadEnter:
       target.click()
       break
   }
@@ -720,5 +727,9 @@ defineExpose({
    * @description cascader content ref
    */
   contentRef,
+  /**
+   * @description selected content text
+   */
+  presentText,
 })
 </script>

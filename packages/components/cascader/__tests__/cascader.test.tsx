@@ -524,4 +524,54 @@ describe('Cascader.vue', () => {
       expect(inputEl.style.height).toEqual(`${sizeMap[size] - 2}px`)
     }
   })
+
+  describe('render empty slot', () => {
+    it('correct render panel empty slot', async () => {
+      const wrapper = _mount(() => (
+        <Cascader>
+          {{
+            empty: () => <div>-=-empty-=-</div>,
+          }}
+        </Cascader>
+      ))
+
+      await wrapper.find(TRIGGER).trigger('click')
+      const emptySlotEl = document.querySelector(
+        '.el-cascader-menu__empty-text'
+      )
+      expect(emptySlotEl?.textContent).toBe('-=-empty-=-')
+    })
+
+    it('correct render menu list empty slot', async () => {
+      const wrapper = _mount(() => (
+        <Cascader filterable>
+          {{
+            empty: () => <div>-=-empty-=-no-data</div>,
+          }}
+        </Cascader>
+      ))
+
+      const input = wrapper.find('input')
+      await input.trigger('focus')
+      const emptySlotEl = document.querySelector(
+        '.el-cascader-menu__empty-text'
+      )
+      expect(emptySlotEl?.textContent).toBe('-=-empty-=-no-data')
+    })
+  })
+
+  describe('render prefix slot', () => {
+    it('correct render prefix slot', async () => {
+      _mount(() => (
+        <Cascader>
+          {{
+            prefix: () => <div>-=-prefix-=-</div>,
+          }}
+        </Cascader>
+      ))
+
+      const prefixSlotEl = document.querySelector('.el-input__prefix-inner')
+      expect(prefixSlotEl?.textContent).toBe('-=-prefix-=-')
+    })
+  })
 })

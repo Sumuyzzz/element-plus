@@ -71,7 +71,9 @@
               :class="ppNs.e('icon-btn')"
               @click="moveByYear(false)"
             >
-              <el-icon><d-arrow-left /></el-icon>
+              <slot name="prev-year">
+                <el-icon><d-arrow-left /></el-icon>
+              </slot>
             </button>
             <button
               v-show="currentView === 'date'"
@@ -81,7 +83,9 @@
               class="arrow-left"
               @click="moveByMonth(false)"
             >
-              <el-icon><arrow-left /></el-icon>
+              <slot name="prev-month">
+                <el-icon><arrow-left /></el-icon>
+              </slot>
             </button>
           </span>
           <span
@@ -115,7 +119,9 @@
               class="arrow-right"
               @click="moveByMonth(true)"
             >
-              <el-icon><arrow-right /></el-icon>
+              <slot name="next-month">
+                <el-icon><arrow-right /></el-icon>
+              </slot>
             </button>
             <button
               type="button"
@@ -124,7 +130,9 @@
               class="d-arrow-right"
               @click="moveByYear(true)"
             >
-              <el-icon><d-arrow-right /></el-icon>
+              <slot name="next-year">
+                <el-icon><d-arrow-right /></el-icon>
+              </slot>
             </button>
           </span>
         </div>
@@ -162,7 +170,7 @@
     </div>
     <div v-show="footerVisible" :class="ppNs.e('footer')">
       <el-button
-        v-show="!isMultipleType"
+        v-show="!isMultipleType && showNow"
         text
         size="small"
         :class="ppNs.e('link-btn')"
@@ -216,6 +224,7 @@ import {
 } from '@element-plus/icons-vue'
 import { TOOLTIP_INJECTION_KEY } from '@element-plus/components/tooltip'
 import { panelDatePickProps } from '../props/panel-date-pick'
+import { getValidDateOfMonth, getValidDateOfYear } from '../utils'
 import DateTable from './basic-date-table.vue'
 import MonthTable from './basic-month-table.vue'
 import YearTable from './basic-year-table.vue'
@@ -421,12 +430,22 @@ const handleMonthPick = async (
   keepOpen?: boolean
 ) => {
   if (selectionMode.value === 'month') {
-    innerDate.value = innerDate.value.startOf('month').month(month as number)
+    innerDate.value = getValidDateOfMonth(
+      innerDate.value.year(),
+      month as number,
+      lang.value,
+      disabledDate
+    )
     emit(innerDate.value, false)
   } else if (selectionMode.value === 'months') {
     emit(month as MonthsPickerEmits, keepOpen ?? true)
   } else {
-    innerDate.value = innerDate.value.startOf('month').month(month as number)
+    innerDate.value = getValidDateOfMonth(
+      innerDate.value.year(),
+      month as number,
+      lang.value,
+      disabledDate
+    )
     currentView.value = 'date'
     if (['month', 'year', 'date', 'week'].includes(selectionMode.value)) {
       emit(innerDate.value, true)
@@ -442,12 +461,14 @@ const handleYearPick = async (
   keepOpen?: boolean
 ) => {
   if (selectionMode.value === 'year') {
-    innerDate.value = innerDate.value.startOf('year').year(year as number)
+    const data = innerDate.value.startOf('year').year(year as number)
+    innerDate.value = getValidDateOfYear(data, lang.value, disabledDate)
     emit(innerDate.value, false)
   } else if (selectionMode.value === 'years') {
     emit(year as YearsPickerEmits, keepOpen ?? true)
   } else {
-    innerDate.value = innerDate.value.year(year as number)
+    const data = innerDate.value.year(year as number)
+    innerDate.value = getValidDateOfYear(data, lang.value, disabledDate)
     currentView.value = 'month'
     if (['month', 'year', 'date', 'week'].includes(selectionMode.value)) {
       emit(innerDate.value, true)
@@ -638,12 +659,17 @@ const getDefaultValue = () => {
   return parseDate
 }
 
-const handleFocusPicker = async () => {
+const handleFocusPicker = () => {
   if (['week', 'month', 'year', 'date'].includes(selectionMode.value)) {
     currentViewRef.value?.focus()
-    if (selectionMode.value === 'week') {
-      handleKeyControl(EVENT_CODE.down)
-    }
+  }
+}
+
+const _handleFocusPicker = () => {
+  handleFocusPicker()
+  // TODO: After focus the date input, the first time you use the ArrowDown keys, you cannot focus on the date cell
+  if (selectionMode.value === 'week') {
+    handleKeyControl(EVENT_CODE.down)
   }
 }
 
@@ -794,7 +820,7 @@ watch(
   (val) => {
     if (val) {
       if (isMultipleType.value) return
-      if (Array.isArray(val)) return
+      if (isArray(val)) return
       innerDate.value = val
     } else {
       innerDate.value = getDefaultValue()
@@ -806,5 +832,5 @@ watch(
 contextEmit('set-picker-option', ['isValidValue', isValidValue])
 contextEmit('set-picker-option', ['formatToString', formatToString])
 contextEmit('set-picker-option', ['parseUserInput', parseUserInput])
-contextEmit('set-picker-option', ['handleFocusPicker', handleFocusPicker])
+contextEmit('set-picker-option', ['handleFocusPicker', _handleFocusPicker])
 </script>
